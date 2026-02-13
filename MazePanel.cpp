@@ -1,0 +1,281 @@
+#include "MazePanel.h"
+
+// Translates the original ASCII maze symbols to integers which acts as keys for selecting a brush color
+unsigned char MazePanel::translateColour(int y, int x) {
+	char c = maze->getCell(y, x);
+
+	switch (c) {
+		case 'O':
+			return 0;       //wxColour(255, 255, 255);
+		case 'X':
+			return 1;       //wxColour(197, 15, 31);
+		case '@':
+			return 2;       //wxColour(0, 55, 218);
+		case '*':
+			return 3;       //wxColour(193, 156, 0);
+		case '!':
+			return 4;       //wxColour(58, 150, 221);
+		default:
+			return INT_MAX; //wxColour(0, 0, 0);
+	}
+}
+
+// Updates the entire cells matrix to represent the current maze and forces a rerender
+void MazePanel::refreshCells() {
+	for (int y = 0; height > y; y++) {
+		for (int x = 0; width > x; x++) {
+			cells[y][x] = translateColour(y, x);
+		}
+	}
+
+	renderNeeded = true;
+	this->Refresh();
+}
+
+// Updates the bitmap which stores the GUI pixel data for the maze
+void MazePanel::updateBitmap() {
+	wxSize size = this->GetSize();
+	
+	const int panelY = size.GetY();
+	const int panelX = size.GetX();
+
+	const int incrementY = (panelY / height);
+	const int incrementX = (panelX / width);
+
+	if (panelY != incrementY * height + BORDERLENGTH || panelX != incrementX * width + BORDERLENGTH) {
+		this->SetSize(incrementX * width + BORDERLENGTH, incrementY * height + BORDERLENGTH);
+		updateBitmap();
+		return;
+	}
+
+	cellHeight = incrementY - BORDERLENGTH;
+	cellWidth = incrementX - BORDERLENGTH;
+
+	int yPos;
+	int xPos;
+
+	bitmap = wxBitmap(panelX, panelY);
+	wxMemoryDC memory(bitmap);
+	wxGraphicsContext* graphics = wxGraphicsContext::Create(memory);
+
+	if (graphics) {
+		yPos = BORDERLENGTH;
+
+		for (int y = 0; height > y; y++) {
+			xPos = BORDERLENGTH;
+
+			for (int x = 0; width > x; x++) {
+				graphics->SetBrush(brush[cells[y][x]]);
+				graphics->DrawRectangle(xPos, yPos, cellWidth, cellHeight);
+				xPos += incrementX;
+			}
+
+			yPos += incrementY;
+		}
+	}
+
+	delete graphics; // TODO use a smart pointer for safety
+
+	renderNeeded = true;
+}
+
+void MazePanel::setupMaze() {
+	maze = Maze::init(DEFAULTHEIGHT, DEFAULTWIDTH);
+
+	for (int y = 0; DEFAULTHEIGHT > y; y++) {
+		cells.emplace_back(std::vector<unsigned char>());
+
+		for (int x = 0; DEFAULTWIDTH > x; x++) {
+			cells[y].emplace_back(translateColour(y, x));
+		}
+	}
+}
+
+MazePanel::MazePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(25,25)) {
+	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
+	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	setupMaze();
+
+	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
+	brush.emplace_back(wxBrush(wxColour(197, 15, 31)));
+	brush.emplace_back(wxBrush(wxColour(0, 55, 218)));
+	brush.emplace_back(wxBrush(wxColour(193, 156, 0)));
+	brush.emplace_back(wxBrush(wxColour(58, 150, 221)));
+
+	updateBitmap();
+}
+
+MazePanel::MazePanel(wxWindow* parent, int size) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(size, size)) {
+	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
+	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	setupMaze();
+
+	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
+	brush.emplace_back(wxBrush(wxColour(197, 15, 31)));
+	brush.emplace_back(wxBrush(wxColour(0, 55, 218)));
+	brush.emplace_back(wxBrush(wxColour(193, 156, 0)));
+	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
+
+	updateBitmap();
+}
+
+MazePanel::~MazePanel() {
+	Maze::uninit();
+}
+
+void MazePanel::removeColumn() {
+	if (width == MINWIDTH) {
+		return;
+	}
+
+	maze->removeColumn();
+
+	for (int y = 0; height > y; y++) {
+		cells[y].pop_back();
+	}
+
+	width--;
+	refreshCells();
+}
+
+void MazePanel::removeRow() {
+	if (height == MINHEIGHT) {
+		return;
+	}
+
+	maze->removeRow();
+	cells.pop_back();
+
+	height--;
+	refreshCells();
+}
+
+void MazePanel::removeStart() {
+	if (startMissing || goalMissing) {
+		return;
+	}
+
+	maze->removePath();
+	maze->removeStart();
+	startMissing = true;
+	refreshCells();
+}
+
+void MazePanel::removeGoal() {
+	if (startMissing || goalMissing) {
+		return;
+	}
+
+	maze->removePath();
+	maze->removeGoal();
+	goalMissing = true;
+	refreshCells();
+}
+
+void MazePanel::addSizer(wxBoxSizer* sizer) {
+	this->sizer = sizer;
+}
+
+void MazePanel::addColumn() {
+	if (width == MAXWIDTH) {
+		return;
+	}
+
+	maze->addColumn();
+
+	for (int y = 0; height > y; y++) {
+		cells[y].emplace_back(translateColour(y, width));
+	}
+
+	width++;
+	refreshCells();
+}
+
+void MazePanel::addRow() {
+	if (height == MAXHEIGHT) {
+		return;
+	}
+
+	maze->addRow();
+	cells.emplace_back(std::vector<unsigned char>());
+
+	for (int x = 0; width > x; x++) {
+		cells[height].emplace_back(translateColour(height, x));
+	}
+
+	height++;
+	refreshCells();
+}
+
+void MazePanel::run() {
+	maze->pathfind();
+	refreshCells();
+}
+
+void MazePanel::randomize() {
+	maze->addObstacles(35);
+	refreshCells();
+}
+
+// Forces a redraw of the maze
+void MazePanel::rerender() {
+	renderNeeded = true;
+	updateBitmap();
+}
+
+// Modifies one of the maze's cells when it is clicked. Either the cell flips colors, becomes a start/goal cell, or nothing happens.
+void MazePanel::onClick(wxMouseEvent& event) {
+	int y = event.GetY() / (cellHeight + BORDERLENGTH);
+	int x = event.GetX() / (cellWidth + BORDERLENGTH);
+
+	if (y == height || x == width) {
+		return;
+	}
+
+	maze->removePath();
+
+	if (startMissing) {
+		maze->setStart(y, x);
+		startMissing = false;
+
+		refreshCells();
+		this->Refresh();
+		return;
+	}
+
+	if (goalMissing) {
+		maze->setGoal(y, x);
+		goalMissing = false;
+
+		refreshCells();
+		this->Refresh();
+		return;
+	}
+
+	maze->flipCell(y, x);
+	cells[y][x] = translateColour(y, x);
+	refreshCells();
+	this->Refresh();
+}
+
+void MazePanel::onPaint(wxPaintEvent& event) {
+	if (renderNeeded) {
+		updateBitmap();
+	}
+
+	wxSize size = this->GetSize();
+
+	const int panelY = size.GetY();
+	const int panelX = size.GetX();
+
+	wxPaintDC painter(this);
+	painter.DrawBitmap(bitmap, 0, 0);
+}
+
+int MazePanel::getHeight() {
+	return height;
+}
+
+int MazePanel::getWidth() {
+	return width;
+}
