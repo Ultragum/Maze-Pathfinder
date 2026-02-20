@@ -43,5 +43,8 @@
     <Image Include="MazeIcon.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="MazeIcon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

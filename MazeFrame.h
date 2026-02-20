@@ -8,12 +8,16 @@
 
 class MazeFrame : public wxFrame {
 	private:
+		static const int BUTTONGROUPS = 5;
 		bool placeStart;
 		bool placeGoal;
 
 		wxPanel* mainPanel;
 		wxPanel* controlPanel;
 		wxPanel* borderPanel;
+		wxPanel* buttonPanels[BUTTONGROUPS];
+		wxBoxSizer* buttonHSizer[BUTTONGROUPS];
+		wxBoxSizer* buttonVSizer[BUTTONGROUPS];
 		MazePanel* mazePanel;
 		wxBoxSizer* controlSettingSizer;
 		wxBoxSizer* controlRunSizer;
@@ -34,7 +38,8 @@ class MazeFrame : public wxFrame {
 		void initSizers();
 		void initButtons();
 		void bindButtons();
-
+		void addButtonStyling(wxButton*, int);
+		void addButtonStyling(wxButton*, wxButton*, int);
 		void timeFunction(std::function<void()>);
 	protected:
 
