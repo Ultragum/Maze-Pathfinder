@@ -3,7 +3,7 @@
 Maze* Maze::instance = nullptr;
 
 Maze::Maze(int y, int x) {
-	gen = std::default_random_engine(std::chrono::system_clock::now().time_since_epoch().count());
+	gen = std::default_random_engine(static_cast<unsigned int>(std::chrono::system_clock::now().time_since_epoch().count()));
 	dist = std::uniform_int_distribution<int>(0, 99);
 	mat = std::vector<std::vector<unsigned char>>(y, std::vector<unsigned char>(x, 'O'));
 	height = y;
@@ -47,7 +47,7 @@ int Maze::calculateH(int y, int x) {
 -----------------------------------------------------------------------------------------
 */
 
-// Node Subclass
+// Node Struct
 Maze::Node::Node() {
 	x = 0;
 	y = 0;
@@ -124,11 +124,11 @@ int Maze::getWidth() {
 }
 
 int Maze::getMatHeight() {
-	return mat.size();
+	return static_cast<int>(mat.size());
 }
 
 int Maze::getMatWidth() {
-	return mat[0].size();
+	return static_cast<int>(mat[0].size());
 }
 
 int Maze::getStart1() {
@@ -149,6 +149,8 @@ int Maze::getGoal2() {
 
 void Maze::removeStart() {
 	if (start[0] != -1) {
+		removePath();
+
 		mat[start[0]][start[1]] = start[2];
 		start[0] = -1;
 		start[1] = -1;
@@ -157,6 +159,8 @@ void Maze::removeStart() {
 
 void Maze::removeGoal() {
 	if (goal[0] != -1) {
+		removePath();
+
 		mat[goal[0]][goal[1]] = goal[2];
 		goal[0] = -1;
 		goal[1] = -1;
@@ -202,15 +206,15 @@ void Maze::removeRow() {
 }
 
 void Maze::removePath() {
-	const int xDir[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
-	const int yDir[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+	const int xDir[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+	const int yDir[8] = {1, 1, 0, -1, -1, -1, 0, 1};
 	int nextY;
 	int nextX;
 	int y;
 	int x;
 
 	std::queue<std::pair<int, int>> path;
-	path.push({start[0],start[1]});
+	path.emplace(start[0], start[1]);
 	
 	while (!path.empty()) {
 		y = path.front().first;
@@ -226,7 +230,7 @@ void Maze::removePath() {
 			}
 
 			mat[nextY][nextX] = 'O';
-			path.push({nextY, nextX});
+			path.emplace(nextY, nextX);
 		}
 	}
 }
@@ -235,7 +239,7 @@ void Maze::addObstacles(int percent) {
 	for (int y = 0; height > y; y++) {
 		for (int x = 0; width > x; x++) {
 			if (percent > dist(gen)) {
-				mat[y][x] = 'X';
+				mat[y][x] = 'O'; // TODO X
 			}
 			else {
 				mat[y][x] = 'O';
@@ -258,7 +262,7 @@ void Maze::addColumn() {
 	}
 
 	for (int i = 0; mat.size() > i; i++) {
-		mat[i].emplace_back('O');
+		mat[i].push_back('O');
 	}
 
 	width++;
@@ -269,7 +273,7 @@ void Maze::addRow() {
 		return;
 	}
 
-	mat.emplace_back(std::vector<unsigned char>(mat[0].size(), 'O'));
+	mat.emplace_back(mat[0].size(), 'O');
 
 	height++;
 }

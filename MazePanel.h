@@ -2,12 +2,13 @@
 #include <wx/graphics.h>
 #include <wx/wx.h>
 #include <chrono>
+#include <memory>
 #include "Maze.h"
 
 class MazePanel : public wxPanel {
 	private:
-		static const int DEFAULTHEIGHT = 6;
-		static const int DEFAULTWIDTH = 15;
+		static const int DEFAULTHEIGHT = 15;
+		static const int DEFAULTWIDTH = 25;
 		static const int MAXHEIGHT = 150;
 		static const int MAXWIDTH = 255;
 		static const int MINHEIGHT = 3;
@@ -23,14 +24,19 @@ class MazePanel : public wxPanel {
 		bool goalMissing = false;
 		int cellHeight;
 		int cellWidth;
+		int prevY;
+		int prevX;
 
 		std::vector<std::vector<unsigned char>> cells;
 		std::vector<wxBrush> brush;
 		wxBoxSizer* sizer;
 		wxBitmap bitmap;
+		wxTimer* timer;
 		Maze* maze;
 
-		unsigned char translateColour(int, int);
+		unsigned char translateColour(const int, const int);
+		void drawOnMazePanel(const wxPoint&);
+		void onTimer(wxTimerEvent&);
 		void refreshCells();
 		void updateBitmap();
 		void setupMaze();
@@ -52,8 +58,9 @@ class MazePanel : public wxPanel {
 		void randomize();
 		void rerender();
 
-		void onClick(wxMouseEvent&);
 		void onPaint(wxPaintEvent&);
+		void onClick(wxMouseEvent&);
+		void onRelease(wxMouseEvent&);
 
 		int getHeight();
 		int getWidth();
