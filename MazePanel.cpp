@@ -208,6 +208,10 @@ void MazePanel::addRow() {
 }
 
 void MazePanel::run() {
+	if (startMissing || goalMissing) {
+		return;
+	}
+
 	maze->pathfind();
 	refreshCells();
 }
@@ -251,10 +255,11 @@ void MazePanel::onClick(wxMouseEvent& event) {
 		this->Refresh();
 		return;
 	}
-
+	
 	maze->flipCell(y, x);
 	cells[y][x] = translateColour(y, x);
 	refreshCells();
+
 	this->Refresh();
 }
 

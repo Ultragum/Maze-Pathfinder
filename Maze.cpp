@@ -335,7 +335,7 @@ void Maze::pathfind() {
 	const int xDir[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 	const int yDir[8] = {1, 1, 0, -1, -1, -1, 0, 1};
 	
-	queue.push(Node (start[0], start[1], 0, calculateH(start[0], start[1]), (start[0] * width) + start[1], -1));
+	queue.emplace(start[0], start[1], 0, calculateH(start[0], start[1]), (start[0] * width) + start[1], -1);
 	nodeMap[queue.top().key] = queue.top();
 
 	Node current;
