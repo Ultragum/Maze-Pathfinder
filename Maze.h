@@ -28,8 +28,8 @@ private:
 	std::default_random_engine gen;
 	std::uniform_int_distribution<int> dist;
 
-	short start[3];
-	short goal[3];
+	int start[3];
+	int goal[3];
 	int height;
 	int width;
 

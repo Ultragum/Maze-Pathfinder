@@ -5,9 +5,8 @@ class App : public wxApp {
 public:
     bool OnInit() {
         MazeFrame* frame = new MazeFrame();
-        //frame->SetIcon(wxIcon("MazeIcon", wxBITMAP_TYPE_PNG));
+        frame->SetIcon(wxIconLocation("MazeIcon.ico"));
         frame->Show();
-        //frame->SetIcon(wxIcon());
         return true;
     }
 };

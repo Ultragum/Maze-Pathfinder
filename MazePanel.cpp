@@ -1,7 +1,7 @@
 #include "MazePanel.h"
 
 // Translates the original ASCII maze symbols to integers which acts as keys for selecting a brush color
-unsigned char MazePanel::translateColour(int y, int x) {
+unsigned char MazePanel::translateColour(const int y, const int x) {
 	char c = maze->getCell(y, x);
 
 	switch (c) {
@@ -16,7 +16,7 @@ unsigned char MazePanel::translateColour(int y, int x) {
 		case '!':
 			return 4;       //wxColour(58, 150, 221);
 		default:
-			return INT_MAX; //wxColour(0, 0, 0);
+			return 255;     //wxColour(0, 0, 0);
 	}
 }
 
@@ -56,7 +56,7 @@ void MazePanel::updateBitmap() {
 
 	bitmap = wxBitmap(panelX, panelY);
 	wxMemoryDC memory(bitmap);
-	wxGraphicsContext* graphics = wxGraphicsContext::Create(memory);
+	std::unique_ptr<wxGraphicsContext> graphics(wxGraphicsContext::Create(memory));
 
 	if (graphics) {
 		yPos = BORDERLENGTH;
@@ -74,8 +74,6 @@ void MazePanel::updateBitmap() {
 		}
 	}
 
-	delete graphics; // TODO use a smart pointer for safety
-
 	renderNeeded = true;
 }
 
@@ -83,24 +81,78 @@ void MazePanel::setupMaze() {
 	maze = Maze::init(DEFAULTHEIGHT, DEFAULTWIDTH);
 
 	for (int y = 0; DEFAULTHEIGHT > y; y++) {
-		cells.emplace_back(std::vector<unsigned char>());
+		cells.emplace_back();
 
 		for (int x = 0; DEFAULTWIDTH > x; x++) {
-			cells[y].emplace_back(translateColour(y, x));
+			cells[y].push_back(translateColour(y, x));
 		}
 	}
+}
+
+void MazePanel::drawOnMazePanel(const wxPoint& panelPosition) {
+	if (0 >= panelPosition.y || 0 >= panelPosition.x) {
+		return;
+	}
+
+	int y = panelPosition.y / (cellHeight + BORDERLENGTH);
+	int x = panelPosition.x / (cellWidth + BORDERLENGTH);
+
+	if (y >= height || x >= width || (y == prevY && x == prevX)) {
+		return;
+	}
+
+	maze->removePath();
+	prevY = y;
+	prevX = x;
+
+	if (startMissing) {
+		maze->setStart(y, x);
+		startMissing = false;
+
+		refreshCells();
+		timer->Stop();
+
+		this->Refresh();
+		return;
+	}
+
+	if (goalMissing) {
+		maze->setGoal(y, x);
+		goalMissing = false;
+
+		refreshCells();
+		timer->Stop();
+
+		this->Refresh();
+		return;
+	}
+
+	maze->flipCell(y, x);
+	cells[y][x] = translateColour(y, x);
+
+	refreshCells();
+	this->Refresh();
+}
+
+void MazePanel::onTimer(wxTimerEvent& event) {
+	wxPoint screenPosition = wxGetMousePosition();
+	wxPoint panelPosition = ScreenToClient(screenPosition);
+	drawOnMazePanel(panelPosition);
 }
 
 MazePanel::MazePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(25,25)) {
 	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
 	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	this->Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
+	this->Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
+	timer = new wxTimer(this);
 	setupMaze();
 
-	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
-	brush.emplace_back(wxBrush(wxColour(197, 15, 31)));
-	brush.emplace_back(wxBrush(wxColour(0, 55, 218)));
-	brush.emplace_back(wxBrush(wxColour(193, 156, 0)));
-	brush.emplace_back(wxBrush(wxColour(58, 150, 221)));
+	brush.emplace_back(wxColour(255, 255, 255));
+	brush.emplace_back(wxColour(197, 15, 31));
+	brush.emplace_back(wxColour(0, 55, 218));
+	brush.emplace_back(wxColour(193, 156, 0));
+	brush.emplace_back(wxColour(58, 150, 221));
 
 	updateBitmap();
 }
@@ -108,13 +160,15 @@ MazePanel::MazePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosi
 MazePanel::MazePanel(wxWindow* parent, int size) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(size, size)) {
 	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
 	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	this->Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
+	this->Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
 	setupMaze();
 
-	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
-	brush.emplace_back(wxBrush(wxColour(197, 15, 31)));
-	brush.emplace_back(wxBrush(wxColour(0, 55, 218)));
-	brush.emplace_back(wxBrush(wxColour(193, 156, 0)));
-	brush.emplace_back(wxBrush(wxColour(255, 255, 255)));
+	brush.emplace_back(wxColour(255, 255, 255));
+	brush.emplace_back(wxColour(197, 15, 31));
+	brush.emplace_back(wxColour(0, 55, 218));
+	brush.emplace_back(wxColour(193, 156, 0));
+	brush.emplace_back(wxColour(58, 150, 221));
 
 	updateBitmap();
 }
@@ -155,7 +209,6 @@ void MazePanel::removeStart() {
 		return;
 	}
 
-	maze->removePath();
 	maze->removeStart();
 	startMissing = true;
 	refreshCells();
@@ -166,7 +219,6 @@ void MazePanel::removeGoal() {
 		return;
 	}
 
-	maze->removePath();
 	maze->removeGoal();
 	goalMissing = true;
 	refreshCells();
@@ -184,7 +236,7 @@ void MazePanel::addColumn() {
 	maze->addColumn();
 
 	for (int y = 0; height > y; y++) {
-		cells[y].emplace_back(translateColour(y, width));
+		cells[y].push_back(translateColour(y, width));
 	}
 
 	width++;
@@ -197,10 +249,10 @@ void MazePanel::addRow() {
 	}
 
 	maze->addRow();
-	cells.emplace_back(std::vector<unsigned char>());
+	cells.emplace_back();
 
 	for (int x = 0; width > x; x++) {
-		cells[height].emplace_back(translateColour(height, x));
+		cells[height].push_back(translateColour(height, x));
 	}
 
 	height++;
@@ -208,6 +260,10 @@ void MazePanel::addRow() {
 }
 
 void MazePanel::run() {
+	if (startMissing || goalMissing) {
+		return;
+	}
+
 	maze->pathfind();
 	refreshCells();
 }
@@ -223,41 +279,6 @@ void MazePanel::rerender() {
 	updateBitmap();
 }
 
-// Modifies one of the maze's cells when it is clicked. Either the cell flips colors, becomes a start/goal cell, or nothing happens.
-void MazePanel::onClick(wxMouseEvent& event) {
-	int y = event.GetY() / (cellHeight + BORDERLENGTH);
-	int x = event.GetX() / (cellWidth + BORDERLENGTH);
-
-	if (y == height || x == width) {
-		return;
-	}
-
-	maze->removePath();
-
-	if (startMissing) {
-		maze->setStart(y, x);
-		startMissing = false;
-
-		refreshCells();
-		this->Refresh();
-		return;
-	}
-
-	if (goalMissing) {
-		maze->setGoal(y, x);
-		goalMissing = false;
-
-		refreshCells();
-		this->Refresh();
-		return;
-	}
-
-	maze->flipCell(y, x);
-	cells[y][x] = translateColour(y, x);
-	refreshCells();
-	this->Refresh();
-}
-
 void MazePanel::onPaint(wxPaintEvent& event) {
 	if (renderNeeded) {
 		updateBitmap();
@@ -270,6 +291,32 @@ void MazePanel::onPaint(wxPaintEvent& event) {
 
 	wxPaintDC painter(this);
 	painter.DrawBitmap(bitmap, 0, 0);
+}
+
+// Modifies one of the maze's cells when it is clicked. Either the cell flips colors, becomes a start/goal cell, or nothing happens.
+void MazePanel::onClick(wxMouseEvent& event) {
+	prevY = -1;
+	prevX = -1;
+
+	if (!timer->IsRunning()) {
+		timer->Start(10);
+	}
+
+	if (!HasCapture()) {
+		CaptureMouse();
+	}
+
+	drawOnMazePanel(event.GetPosition());
+}
+
+void MazePanel::onRelease(wxMouseEvent& event) {
+	if (timer->IsRunning()) {
+		timer->Stop();
+	}
+
+	if (HasCapture()) {
+		ReleaseMouse();
+	}
 }
 
 int MazePanel::getHeight() {

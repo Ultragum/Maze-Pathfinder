@@ -40,7 +40,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="MazeIcon.png">
+    <Image Include="MazeIcon.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="MazeIcon.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
