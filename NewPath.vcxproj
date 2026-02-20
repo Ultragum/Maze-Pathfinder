@@ -141,7 +141,7 @@
     <ClInclude Include="Maze.h" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="MazeIcon.png" />
+    <Image Include="MazeIcon.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
