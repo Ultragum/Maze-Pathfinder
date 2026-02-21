@@ -235,11 +235,27 @@ void Maze::removePath() {
 	}
 }
 
+void Maze::clear() {
+	for (int y = 0; height > y; y++) {
+		for (int x = 0; width > x; x++) {
+			mat[y][x] = 'O';
+		}
+	}
+
+	if ((start[0] >= 0 && height > start[0]) && (start[1] >= 0 && width > start[1])) {
+		mat[start[0]][start[1]] = '@';
+	}
+
+	if ((goal[0] >= 0 && height > goal[0]) && (goal[1] >= 0 && width > goal[1])) {
+		mat[goal[0]][goal[1]] = '*';
+	}
+}
+
 void Maze::addObstacles(int percent) {
 	for (int y = 0; height > y; y++) {
 		for (int x = 0; width > x; x++) {
 			if (percent > dist(gen)) {
-				mat[y][x] = 'O'; // TODO X
+				mat[y][x] = 'X';
 			}
 			else {
 				mat[y][x] = 'O';

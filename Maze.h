@@ -37,6 +37,7 @@ private:
 	Maze(int, int);
 
 	int calculateH(int, int);
+
 public:
 	static Maze* init();
 	static Maze* init(int, int);
@@ -59,6 +60,7 @@ public:
 	void removeColumn();
 	void removeRow();
 	void removePath();
+	void clear();
 
 	void addObstacles(int);
 	void addColumn();

@@ -16,8 +16,9 @@ void MazeFrame::initSizers() {
 }
 
 void MazeFrame::initButtons() {
-	runButton = new wxButton(buttonPanels[3], wxID_ANY, "Pathfind");
-	randomButton = new wxButton(buttonPanels[4], wxID_ANY, "Randomize");
+	runButton = new wxButton(buttonPanels[4], wxID_ANY, "Pathfind");
+	randomButton = new wxButton(buttonPanels[3], wxID_ANY, "Randomize");
+	clearButton = new wxButton(buttonPanels[5], wxID_ANY, "Clear");
 	removeColumn = new wxButton(buttonPanels[2], wxID_ANY, "- Column");
 	removeRow = new wxButton(buttonPanels[0], wxID_ANY, "- Row");
 	addColumn = new wxButton(buttonPanels[2], wxID_ANY, "+ Column");
@@ -29,6 +30,7 @@ void MazeFrame::initButtons() {
 void MazeFrame::bindButtons() {
 	runButton->Bind(wxEVT_BUTTON, &MazeFrame::onRunClick, this);
 	randomButton->Bind(wxEVT_BUTTON, &MazeFrame::onRandomClick, this);
+	clearButton->Bind(wxEVT_BUTTON, &MazeFrame::onClearMaze, this);
 	removeColumn->Bind(wxEVT_BUTTON, &MazeFrame::onRemoveColumn, this);
 	removeRow->Bind(wxEVT_BUTTON, &MazeFrame::onRemoveRow, this);
 	addColumn->Bind(wxEVT_BUTTON, &MazeFrame::onAddColumn, this);
@@ -59,39 +61,8 @@ void MazeFrame::addButtonStyling(wxButton* leftButton, wxButton* rightButton, in
 	buttonHSizer[i]->AddStretchSpacer(2);
 }
 
-// Debugging function used to time other functions
-void MazeFrame::timeFunction(std::function<void()> function) {
-	auto start = std::chrono::high_resolution_clock::now();
-
-	function();
-
-	auto end = std::chrono::high_resolution_clock::now();
-	std::chrono::duration<double> timeTaken(end - start);
-
-	wxLogStatus(std::to_string(timeTaken.count()));
-}
-
-MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE) {
-	mainPanel = new wxPanel(this);
-	mazePanel = new MazePanel(mainPanel);
-	controlPanel = new wxPanel(mainPanel);
-	borderPanel = new wxPanel(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(400, 4));
-	
-	for (int i = 0; 5 > i; i++) {
-		buttonPanels[i] = new wxPanel(controlPanel);
-		buttonPanels[i]->SetBackgroundColour(wxColour(0, 0, 0));
-	}
-
-	initSizers();
-	initButtons();
-	bindButtons();
-	CreateStatusBar();
-
-	mainPanel->SetBackgroundColour(wxColour(92, 184, 255));
-	mazePanel->SetBackgroundColour(wxColour(0, 0, 0));
-	controlPanel->SetBackgroundColour(wxColour(235, 235, 235));
-	borderPanel->SetBackgroundColour(wxColour(0,0,0));
-
+void MazeFrame::setupStyling() {
+	// Top level sizers
 	panelSizer->Add(mazeVSizer, wxSizerFlags().Expand().Proportion(11));
 	panelSizer->Add(borderHSizer, wxSizerFlags().Expand().Proportion(0));
 	panelSizer->Add(controlPanel, wxSizerFlags().Expand().Proportion(6));
@@ -112,7 +83,9 @@ MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefault
 	controlVSizer->Add(controlRunSizer, wxSizerFlags().Expand().Proportion(3));
 	controlVSizer->AddStretchSpacer(1);
 
-	wxSizerFlags SettingButtonSize = wxSizerFlags().Expand().Proportion(2);
+	// --------------------------------------
+	// Settings sizers
+
 	controlSettingSizer->AddStretchSpacer(1);
 
 	controlSettingSizer->Add(buttonPanels[0], wxSizerFlags().Expand().Proportion(4));
@@ -127,16 +100,25 @@ MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefault
 	addButtonStyling(removeColumn, addColumn, 2);
 	controlSettingSizer->AddStretchSpacer(1);
 
+	// --------------------------------------
+	// Operation sizers
 
-	controlRunSizer->AddStretchSpacer(5);
+	controlRunSizer->AddStretchSpacer(4);
 
 	controlRunSizer->Add(buttonPanels[3], wxSizerFlags().Expand().Proportion(3));
-	addButtonStyling(runButton, 3);
+	addButtonStyling(randomButton, 3);
 	controlRunSizer->AddStretchSpacer(1);
 
 	controlRunSizer->Add(buttonPanels[4], wxSizerFlags().Expand().Proportion(3));
-	addButtonStyling(randomButton, 4);
-	controlRunSizer->AddStretchSpacer(5);
+	addButtonStyling(runButton, 4);
+	controlRunSizer->AddStretchSpacer(1);
+
+	controlRunSizer->Add(buttonPanels[5], wxSizerFlags().Expand().Proportion(3));
+	addButtonStyling(clearButton, 5);
+	controlRunSizer->AddStretchSpacer(4);
+
+	// --------------------------------------
+	// Assign sizers to panels
 
 	mazePanel->addSizer(mazeVSizer);
 
@@ -150,6 +132,47 @@ MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefault
 
 	mainPanel->SetSizer(panelSizer);
 	panelSizer->SetSizeHints(this);
+}
+
+// Debugging function used to time other functions
+void MazeFrame::timeFunction(std::function<void()> function) {
+	auto start = std::chrono::high_resolution_clock::now();
+
+	function();
+
+	auto end = std::chrono::high_resolution_clock::now();
+	std::chrono::duration<double, std::milli> timeTaken(end - start);
+	std::string timeTakenString = "Time elapsed: ";
+
+	timeTakenString.reserve(50);
+	timeTakenString.append(std::to_string(timeTaken.count()));
+	timeTakenString.append(" milliseconds");
+
+	wxLogStatus(timeTakenString);
+}
+
+MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefaultPosition, wxDefaultSize, wxDEFAULT_FRAME_STYLE) {
+	mainPanel = new wxPanel(this);
+	mazePanel = new MazePanel(mainPanel);
+	controlPanel = new wxPanel(mainPanel);
+	borderPanel = new wxPanel(mainPanel, wxID_ANY, wxDefaultPosition, wxSize(400, 4));
+	
+	for (int i = 0; BUTTONGROUPS > i; i++) {
+		buttonPanels[i] = new wxPanel(controlPanel);
+		buttonPanels[i]->SetBackgroundColour(wxColour(0, 0, 0));
+	}
+
+	initSizers();
+	initButtons();
+	bindButtons();
+	setupStyling();
+	CreateStatusBar();
+	
+	mainPanel->SetBackgroundColour(wxColour(92, 184, 255));
+	mazePanel->SetBackgroundColour(wxColour(0, 0, 0));
+	controlPanel->SetBackgroundColour(wxColour(235, 235, 235));
+	borderPanel->SetBackgroundColour(wxColour(0,0,0));
+
 	Maximize();
 }
 
@@ -159,6 +182,10 @@ void MazeFrame::onRunClick(wxCommandEvent& event) {
 
 void MazeFrame::onRandomClick(wxCommandEvent& event) {
 	timeFunction(std::bind(&MazePanel::randomize, mazePanel));
+}
+
+void MazeFrame::onClearMaze(wxCommandEvent& event) {
+	timeFunction(std::bind(&MazePanel::clear, mazePanel));
 }
 
 void MazeFrame::onRemoveColumn(wxCommandEvent& event) {

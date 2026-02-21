@@ -273,6 +273,11 @@ void MazePanel::randomize() {
 	refreshCells();
 }
 
+void MazePanel::clear() {
+	maze->clear();
+	refreshCells();
+}
+
 // Forces a redraw of the maze
 void MazePanel::rerender() {
 	renderNeeded = true;
