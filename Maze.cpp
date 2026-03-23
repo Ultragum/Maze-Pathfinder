@@ -115,6 +115,22 @@ void Maze::setGoal(int y, int x) {
 	goal[1] = x;
 }
 
+int Maze::getMaxHeight() {
+	return MAXHEIGHT;
+}
+
+int Maze::getMaxWidth() {
+	return MAXWIDTH;
+}
+
+int Maze::getMinHeight() {
+	return MINHEIGHT;
+}
+
+int Maze::getMinWidth() {
+	return MINWIDTH;
+}
+
 int Maze::getHeight() {
 	return height;
 }
@@ -172,6 +188,8 @@ void Maze::removeColumn() {
 		return;
 	}
 
+	removePath();
+
 	if (start[1] + 1 == width) {
 		removeStart();
 	}
@@ -191,6 +209,8 @@ void Maze::removeRow() {
 	if (height == 1) {
 		return;
 	}
+
+	removePath();
 
 	if (start[0] + 1 == height) {
 		removeStart();
@@ -277,6 +297,8 @@ void Maze::addColumn() {
 		return;
 	}
 
+	removePath();
+
 	for (int i = 0; mat.size() > i; i++) {
 		mat[i].push_back('O');
 	}
@@ -289,6 +311,8 @@ void Maze::addRow() {
 		return;
 	}
 
+	removePath();
+
 	mat.emplace_back(mat[0].size(), 'O');
 
 	height++;
@@ -297,9 +321,12 @@ void Maze::addRow() {
 void Maze::flipCell(int y, int x) {
 	switch (mat[y][x]) {
 		case 'X':
+			removePath();
 			mat[y][x] = 'O';
 			return;
+		case '!':
 		case 'O':
+			removePath();
 			mat[y][x] = 'X';
 			return;
 		default:

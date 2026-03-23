@@ -9,11 +9,6 @@ class MazePanel : public wxPanel {
 	private:
 		static const int DEFAULTHEIGHT = 15;
 		static const int DEFAULTWIDTH = 35;
-		static const int MAXHEIGHT = 150;
-		static const int MAXWIDTH = 255;
-		static const int MINHEIGHT = 3;
-		static const int MINWIDTH = 3;
-		static const int BORDERLENGTH = 2;
 		static const int MINCELLSIZE = 4;
 		static const int CELLSIZE = 15;
 
@@ -22,8 +17,11 @@ class MazePanel : public wxPanel {
 		bool renderNeeded = false;
 		bool startMissing = false;
 		bool goalMissing = false;
+		int borderLength;
 		int cellHeight;
 		int cellWidth;
+		int offsetY;
+		int offsetX;
 		int prevY;
 		int prevX;
 
@@ -55,6 +53,9 @@ class MazePanel : public wxPanel {
 		void addColumn();
 		void addRow();
 
+		void setColumns(int);
+		void setRows(int);
+
 		void run();
 		void randomize();
 		void clear();
@@ -64,6 +65,10 @@ class MazePanel : public wxPanel {
 		void onClick(wxMouseEvent&);
 		void onRelease(wxMouseEvent&);
 
+		int getMaxHeight();
+		int getMaxWidth();
+		int getMinHeight();
+		int getMinWidth();
 		int getHeight();
 		int getWidth();
 

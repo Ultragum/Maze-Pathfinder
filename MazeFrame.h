@@ -35,6 +35,8 @@ class MazeFrame : public wxFrame {
 		wxButton* addRow;
 		wxButton* setStart;
 		wxButton* setGoal;
+		wxButton* setColumn;
+		wxButton* setRow;
 
 		void initSizers();
 		void initButtons();
@@ -42,6 +44,7 @@ class MazeFrame : public wxFrame {
 
 		void addButtonStyling(wxButton*, int);
 		void addButtonStyling(wxButton*, wxButton*, int);
+		void addButtonStyling(wxButton*, wxButton*, wxButton*, int);
 		void setupStyling();
 
 		void timeFunction(std::function<void()>);
@@ -58,4 +61,6 @@ class MazeFrame : public wxFrame {
 		void onAddRow(wxCommandEvent&);
 		void onSetStart(wxCommandEvent&);
 		void onSetGoal(wxCommandEvent&);
+		void onSetColumn(wxCommandEvent&);
+		void onSetRow(wxCommandEvent&);
 };

@@ -25,6 +25,8 @@ void MazeFrame::initButtons() {
 	addRow = new wxButton(buttonPanels[0], wxID_ANY, "+ Row");
 	setStart = new wxButton(buttonPanels[1], wxID_ANY, "Set Start");
 	setGoal = new wxButton(buttonPanels[1], wxID_ANY, "Set Goal");
+	setColumn = new wxButton(buttonPanels[2], wxID_ANY, "Set Column");
+	setRow = new wxButton(buttonPanels[0], wxID_ANY, "Set Row");
 }
 
 void MazeFrame::bindButtons() {
@@ -37,6 +39,8 @@ void MazeFrame::bindButtons() {
 	addRow->Bind(wxEVT_BUTTON, &MazeFrame::onAddRow, this);
 	setStart->Bind(wxEVT_BUTTON, &MazeFrame::onSetStart, this);
 	setGoal->Bind(wxEVT_BUTTON, &MazeFrame::onSetGoal, this);
+	setColumn->Bind(wxEVT_BUTTON, &MazeFrame::onSetColumn, this);
+	setRow->Bind(wxEVT_BUTTON, &MazeFrame::onSetRow, this);
 }
 
 void MazeFrame::addButtonStyling(wxButton* button, int i) {
@@ -58,6 +62,20 @@ void MazeFrame::addButtonStyling(wxButton* leftButton, wxButton* rightButton, in
 	buttonHSizer[i]->Add(leftButton, wxSizerFlags().Expand().Proportion(122));
 	buttonHSizer[i]->AddStretchSpacer(2);
 	buttonHSizer[i]->Add(rightButton, wxSizerFlags().Expand().Proportion(122));
+	buttonHSizer[i]->AddStretchSpacer(2);
+}
+
+void MazeFrame::addButtonStyling(wxButton* leftButton, wxButton* centerButton, wxButton* rightButton, int i) {
+	buttonVSizer[i]->AddStretchSpacer(1);
+	buttonVSizer[i]->Add(buttonHSizer[i], wxSizerFlags().Expand().Proportion(38));
+	buttonVSizer[i]->AddStretchSpacer(1);
+
+	buttonHSizer[i]->AddStretchSpacer(2);
+	buttonHSizer[i]->Add(leftButton, wxSizerFlags().Expand().Proportion(81));
+	buttonHSizer[i]->AddStretchSpacer(2);
+	buttonHSizer[i]->Add(centerButton, wxSizerFlags().Expand().Proportion(80));
+	buttonHSizer[i]->AddStretchSpacer(2);
+	buttonHSizer[i]->Add(rightButton, wxSizerFlags().Expand().Proportion(81));
 	buttonHSizer[i]->AddStretchSpacer(2);
 }
 
@@ -89,7 +107,7 @@ void MazeFrame::setupStyling() {
 	controlSettingSizer->AddStretchSpacer(1);
 
 	controlSettingSizer->Add(buttonPanels[0], wxSizerFlags().Expand().Proportion(4));
-	addButtonStyling(removeRow, addRow, 0);
+	addButtonStyling(removeRow, setRow, addRow, 0);
 	controlSettingSizer->AddStretchSpacer(1);
 
 	controlSettingSizer->Add(buttonPanels[1], wxSizerFlags().Expand().Proportion(4));
@@ -97,7 +115,7 @@ void MazeFrame::setupStyling() {
 	controlSettingSizer->AddStretchSpacer(1);
 
 	controlSettingSizer->Add(buttonPanels[2], wxSizerFlags().Expand().Proportion(4));
-	addButtonStyling(removeColumn, addColumn, 2);
+	addButtonStyling(removeColumn, setColumn, addColumn, 2);
 	controlSettingSizer->AddStretchSpacer(1);
 
 	// --------------------------------------
@@ -132,6 +150,8 @@ void MazeFrame::setupStyling() {
 
 	mainPanel->SetSizer(panelSizer);
 	panelSizer->SetSizeHints(this);
+	
+	SetMinSize(wxSize(700, 600));
 }
 
 // Debugging function used to time other functions
@@ -169,7 +189,7 @@ MazeFrame::MazeFrame() : wxFrame(nullptr, wxID_ANY, "Maze Pathfinder", wxDefault
 	CreateStatusBar();
 	
 	mainPanel->SetBackgroundColour(wxColour(92, 184, 255));
-	mazePanel->SetBackgroundColour(wxColour(0, 0, 0));
+	mazePanel->SetBackgroundColour(wxColour(92, 184, 255));
 	controlPanel->SetBackgroundColour(wxColour(235, 235, 235));
 	borderPanel->SetBackgroundColour(wxColour(0,0,0));
 
@@ -214,4 +234,70 @@ void MazeFrame::onSetStart(wxCommandEvent& event) {
 
 void MazeFrame::onSetGoal(wxCommandEvent& event) {
 	mazePanel->removeGoal();
+}
+
+void MazeFrame::onSetColumn(wxCommandEvent& event) {
+	const int maxColumns = mazePanel->getMaxWidth();
+	const int minColumns = mazePanel->getMinWidth();
+
+	wxTextEntryDialog dialog(nullptr, "How many columns do you want? (" + std::to_string(minColumns) + " - " + std::to_string(maxColumns) + ")");
+	dialog.SetTextValidator(wxFILTER_DIGITS);
+
+	if (dialog.ShowModal() == wxID_OK) {
+		wxString userInput = dialog.GetValue();
+
+		// Prevents overflow by returning if there's 4 or more digits
+		if (userInput.length() > 3) {
+			wxLogStatus("Invalid Input: Too many digits");
+			return;
+		}
+		
+		std::unique_ptr<int> columns(new int());
+
+		if (!userInput.ToInt(columns.get())) {
+			wxLogStatus("Warning: Unexpected error");
+			return;
+		}
+
+		if (minColumns > *columns || *columns > maxColumns) {
+			wxLogStatus("Invalid Input: The column count is out of bounds");
+			return;
+		}
+
+		wxLogStatus("The amount of columns have been changed to " + std::to_string(*columns));
+		mazePanel->setColumns(*columns);
+	}
+}
+
+void MazeFrame::onSetRow(wxCommandEvent& event) {
+	const int maxRows = mazePanel->getMaxHeight();
+	const int minRows = mazePanel->getMinHeight();
+
+	wxTextEntryDialog dialog(nullptr, "How many rows do you want? (" + std::to_string(minRows) + " - " + std::to_string(maxRows) + ")");
+	dialog.SetTextValidator(wxFILTER_DIGITS);
+
+	if (dialog.ShowModal() == wxID_OK) {
+		wxString userInput = dialog.GetValue();
+
+		// Prevents overflow by returning if there's 4 or more digits
+		if (userInput.length() > 3) {
+			wxLogStatus("Invalid Input: Too many digits");
+			return;
+		}
+
+		std::unique_ptr<int> rows(new int());
+
+		if (!userInput.ToInt(rows.get())) {
+			wxLogStatus("Warning: Unexpected error");
+			return;
+		}
+
+		if (minRows > *rows || *rows > maxRows) {
+			wxLogStatus("Invalid Input: The row count is out of bounds");
+			return;
+		}
+
+		wxLogStatus("The amount of rows have been changed to " + std::to_string(*rows));
+		mazePanel->setRows(*rows);
+	}
 }
