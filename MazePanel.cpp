@@ -29,40 +29,63 @@ void MazePanel::refreshCells() {
 	}
 
 	renderNeeded = true;
-	this->Refresh();
+	Refresh();
 }
 
 // Updates the bitmap which stores the GUI pixel data for the maze
 void MazePanel::updateBitmap() {
-	wxSize size = this->GetSize();
+	wxSize size = GetSize();
 	
-	const int panelY = size.GetY();
-	const int panelX = size.GetX();
+	int bitmapY = size.GetY();
+	int bitmapX = size.GetX();
 
-	const int incrementY = (panelY / height);
-	const int incrementX = (panelX / width);
+	int incrementY = (bitmapY / height);
+	int incrementX = (bitmapX / width);
 
-	if (panelY != incrementY * height + BORDERLENGTH || panelX != incrementX * width + BORDERLENGTH) {
-		this->SetSize(incrementX * width + BORDERLENGTH, incrementY * height + BORDERLENGTH);
-		updateBitmap();
-		return;
+	borderLength = 2;
+
+	if (10 > incrementY || 10 > incrementX) {
+		borderLength = 1;
 	}
 
-	cellHeight = incrementY - BORDERLENGTH;
-	cellWidth = incrementX - BORDERLENGTH;
+	while (bitmapY != incrementY * height + borderLength || bitmapX != incrementX * width + borderLength) {
+		bitmapY = incrementY * height + borderLength;
+		bitmapX = incrementX * width + borderLength;
+
+		incrementY = (bitmapY / height);
+		incrementX = (bitmapX / width);
+
+		if (bitmapY > size.GetY()) {
+			incrementY--;
+		}
+
+		if (bitmapX > size.GetX()) {
+			incrementX--;
+		}
+
+		if (10 > incrementY || 10 > incrementX) {
+			borderLength = 1;
+		}
+	}
+	
+	offsetY = (size.GetY() - bitmapY) / 2;
+	offsetX = (size.GetX() - bitmapX) / 2;
+
+	cellHeight = std::max(1, incrementY - borderLength);
+	cellWidth = std::max(1, incrementX - borderLength);
+
+	bitmap = wxBitmap(bitmapX, bitmapY);
+	wxMemoryDC memory(bitmap);
+	std::unique_ptr<wxGraphicsContext> graphics(wxGraphicsContext::Create(memory));
 
 	int yPos;
 	int xPos;
 
-	bitmap = wxBitmap(panelX, panelY);
-	wxMemoryDC memory(bitmap);
-	std::unique_ptr<wxGraphicsContext> graphics(wxGraphicsContext::Create(memory));
-
 	if (graphics) {
-		yPos = BORDERLENGTH;
+		yPos = borderLength;
 
 		for (int y = 0; height > y; y++) {
-			xPos = BORDERLENGTH;
+			xPos = borderLength;
 
 			for (int x = 0; width > x; x++) {
 				graphics->SetBrush(brush[cells[y][x]]);
@@ -90,18 +113,17 @@ void MazePanel::setupMaze() {
 }
 
 void MazePanel::drawOnMazePanel(const wxPoint& panelPosition) {
-	if (0 >= panelPosition.y || 0 >= panelPosition.x) {
+	if (offsetY >= panelPosition.y || offsetX >= panelPosition.x) {
 		return;
 	}
 
-	int y = panelPosition.y / (cellHeight + BORDERLENGTH);
-	int x = panelPosition.x / (cellWidth + BORDERLENGTH);
+	int y = (panelPosition.y - offsetY) / (cellHeight + borderLength);
+	int x = (panelPosition.x - offsetX) / (cellWidth + borderLength);
 
-	if (y >= height || x >= width || (y == prevY && x == prevX)) {
+	if ((y == prevY && x == prevX) || y >= height || x >= width) {
 		return;
 	}
 
-	maze->removePath();
 	prevY = y;
 	prevX = x;
 
@@ -111,8 +133,6 @@ void MazePanel::drawOnMazePanel(const wxPoint& panelPosition) {
 
 		refreshCells();
 		timer->Stop();
-
-		this->Refresh();
 		return;
 	}
 
@@ -122,8 +142,6 @@ void MazePanel::drawOnMazePanel(const wxPoint& panelPosition) {
 
 		refreshCells();
 		timer->Stop();
-
-		this->Refresh();
 		return;
 	}
 
@@ -131,7 +149,6 @@ void MazePanel::drawOnMazePanel(const wxPoint& panelPosition) {
 	cells[y][x] = translateColour(y, x);
 
 	refreshCells();
-	this->Refresh();
 }
 
 void MazePanel::onTimer(wxTimerEvent& event) {
@@ -141,10 +158,10 @@ void MazePanel::onTimer(wxTimerEvent& event) {
 }
 
 MazePanel::MazePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(25,25)) {
-	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
-	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
-	this->Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
-	this->Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
+	Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
+	Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
+	Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
 	timer = new wxTimer(this);
 	setupMaze();
 
@@ -158,10 +175,10 @@ MazePanel::MazePanel(wxWindow* parent) : wxPanel(parent, wxID_ANY, wxDefaultPosi
 }
 
 MazePanel::MazePanel(wxWindow* parent, int size) : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxSize(size, size)) {
-	this->Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
-	this->Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
-	this->Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
-	this->Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
+	Bind(wxEVT_PAINT, &MazePanel::onPaint, this);
+	Bind(wxEVT_LEFT_DOWN, &MazePanel::onClick, this);
+	Bind(wxEVT_LEFT_UP, &MazePanel::onRelease, this);
+	Bind(wxEVT_TIMER, &MazePanel::onTimer, this);
 	setupMaze();
 
 	brush.emplace_back(wxColour(255, 255, 255));
@@ -175,10 +192,11 @@ MazePanel::MazePanel(wxWindow* parent, int size) : wxPanel(parent, wxID_ANY, wxD
 
 MazePanel::~MazePanel() {
 	Maze::uninit();
+	delete timer;
 }
 
 void MazePanel::removeColumn() {
-	if (width == MINWIDTH) {
+	if (width == maze->getMinWidth()) {
 		return;
 	}
 
@@ -189,11 +207,14 @@ void MazePanel::removeColumn() {
 	}
 
 	width--;
-	refreshCells();
+
+	if (renderNeeded) {
+		refreshCells();
+	}
 }
 
 void MazePanel::removeRow() {
-	if (height == MINHEIGHT) {
+	if (height == maze->getMinHeight()) {
 		return;
 	}
 
@@ -201,7 +222,10 @@ void MazePanel::removeRow() {
 	cells.pop_back();
 
 	height--;
-	refreshCells();
+	
+	if (renderNeeded) {
+		refreshCells();
+	}
 }
 
 void MazePanel::removeStart() {
@@ -229,7 +253,7 @@ void MazePanel::addSizer(wxBoxSizer* sizer) {
 }
 
 void MazePanel::addColumn() {
-	if (width == MAXWIDTH) {
+	if (width == maze->getMaxWidth()) {
 		return;
 	}
 
@@ -240,11 +264,14 @@ void MazePanel::addColumn() {
 	}
 
 	width++;
-	refreshCells();
+
+	if (renderNeeded) {
+		refreshCells();
+	}
 }
 
 void MazePanel::addRow() {
-	if (height == MAXHEIGHT) {
+	if (height == maze->getMaxHeight()) {
 		return;
 	}
 
@@ -256,6 +283,45 @@ void MazePanel::addRow() {
 	}
 
 	height++;
+
+	if (renderNeeded) {
+		refreshCells();
+	}
+}
+
+void MazePanel::setColumns(int columns) {
+	if (columns == width) {
+		return;
+	}
+
+	renderNeeded = false;
+
+	while (columns > width) {
+		addColumn();
+	}
+
+	while (width > columns) {
+		removeColumn();
+	}
+
+	refreshCells();
+}
+
+void MazePanel::setRows(int rows) {
+	if (rows == height) {
+		return;
+	}
+
+	renderNeeded = true;
+
+	while (rows > height) {
+		addRow();
+	}
+
+	while (height > rows) {
+		removeRow();
+	}
+
 	refreshCells();
 }
 
@@ -273,6 +339,11 @@ void MazePanel::randomize() {
 	refreshCells();
 }
 
+void MazePanel::clear() {
+	maze->clear();
+	refreshCells();
+}
+
 // Forces a redraw of the maze
 void MazePanel::rerender() {
 	renderNeeded = true;
@@ -284,13 +355,8 @@ void MazePanel::onPaint(wxPaintEvent& event) {
 		updateBitmap();
 	}
 
-	wxSize size = this->GetSize();
-
-	const int panelY = size.GetY();
-	const int panelX = size.GetX();
-
 	wxPaintDC painter(this);
-	painter.DrawBitmap(bitmap, 0, 0);
+	painter.DrawBitmap(bitmap, offsetX, offsetY);
 }
 
 // Modifies one of the maze's cells when it is clicked. Either the cell flips colors, becomes a start/goal cell, or nothing happens.
@@ -317,6 +383,22 @@ void MazePanel::onRelease(wxMouseEvent& event) {
 	if (HasCapture()) {
 		ReleaseMouse();
 	}
+}
+
+int MazePanel::getMaxHeight() {
+	return maze->getMaxHeight();
+}
+
+int MazePanel::getMaxWidth() {
+	return maze->getMaxWidth();
+}
+
+int MazePanel::getMinHeight() {
+	return maze->getMinHeight();
+}
+
+int MazePanel::getMinWidth() {
+	return maze->getMinWidth();
 }
 
 int MazePanel::getHeight() {

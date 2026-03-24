@@ -21,6 +21,8 @@ private:
 	static const int OBSPERCENT = 35;
 	static const int MAXHEIGHT = 150;
 	static const int MAXWIDTH = 255;
+	static const int MINHEIGHT = 3;
+	static const int MINWIDTH = 3;
 
 	static Maze* instance;
 
@@ -37,6 +39,7 @@ private:
 	Maze(int, int);
 
 	int calculateH(int, int);
+
 public:
 	static Maze* init();
 	static Maze* init(int, int);
@@ -45,8 +48,13 @@ public:
 	void setStart(int, int);
 	void setGoal(int, int);
 
+	int getMaxHeight();
+	int getMaxWidth();
+	int getMinHeight();
+	int getMinWidth();
 	int getHeight();
 	int getWidth();
+
 	int getMatHeight();
 	int getMatWidth();
 	int getStart1();
@@ -59,6 +67,7 @@ public:
 	void removeColumn();
 	void removeRow();
 	void removePath();
+	void clear();
 
 	void addObstacles(int);
 	void addColumn();

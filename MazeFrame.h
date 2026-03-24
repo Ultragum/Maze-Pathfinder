@@ -8,7 +8,7 @@
 
 class MazeFrame : public wxFrame {
 	private:
-		static const int BUTTONGROUPS = 5;
+		static const int BUTTONGROUPS = 6;
 		bool placeStart;
 		bool placeGoal;
 
@@ -28,30 +28,39 @@ class MazeFrame : public wxFrame {
 		wxBoxSizer* mazeVSizer;
 		wxButton* runButton;
 		wxButton* randomButton;
+		wxButton* clearButton;
 		wxButton* removeColumn;
 		wxButton* removeRow;
 		wxButton* addColumn;
 		wxButton* addRow;
 		wxButton* setStart;
 		wxButton* setGoal;
+		wxButton* setColumn;
+		wxButton* setRow;
 
 		void initSizers();
 		void initButtons();
 		void bindButtons();
+
 		void addButtonStyling(wxButton*, int);
 		void addButtonStyling(wxButton*, wxButton*, int);
+		void addButtonStyling(wxButton*, wxButton*, wxButton*, int);
+		void setupStyling();
+
 		void timeFunction(std::function<void()>);
-	protected:
 
 	public:
 		MazeFrame();
 
 		void onRunClick(wxCommandEvent&);
 		void onRandomClick(wxCommandEvent&);
+		void onClearMaze(wxCommandEvent&);
 		void onRemoveColumn(wxCommandEvent&);
 		void onRemoveRow(wxCommandEvent&);
 		void onAddColumn(wxCommandEvent&);
 		void onAddRow(wxCommandEvent&);
 		void onSetStart(wxCommandEvent&);
 		void onSetGoal(wxCommandEvent&);
+		void onSetColumn(wxCommandEvent&);
+		void onSetRow(wxCommandEvent&);
 };
